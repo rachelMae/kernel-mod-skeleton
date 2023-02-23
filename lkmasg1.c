@@ -2,6 +2,7 @@
  * File:	lkmasg1.c
  * Adapted for Linux 5.15 by: John Aedo
  * Class:	COP4600-SP23
+ * Edited by: Rachel Dauns and her group Justin and Hunter
  */
 
 #include <linux/module.h>	  // Core header for modules.
@@ -21,6 +22,9 @@ MODULE_VERSION("0.1");						 ///< A version number to inform users
  * Important variables that store data and keep track of relevant information.
  */
 static int major_number;
+static char   message[256] = {0};          
+static short  size_of_message;             
+static int    numberOpens = 0;
 
 static struct class *lkmasg1Class = NULL;	///< The device-driver class struct pointer
 static struct device *lkmasg1Device = NULL; ///< The device-driver device struct pointer
@@ -105,6 +109,7 @@ void cleanup_module(void)
  */
 static int open(struct inode *inodep, struct file *filep)
 {
+	numberOpens++;
 	printk(KERN_INFO "lkmasg1: device opened.\n");
 	return 0;
 }
@@ -123,8 +128,18 @@ static int close(struct inode *inodep, struct file *filep)
  */
 static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
-	printk(KERN_INFO "read stub");
-	return 0;
+	int error_count = 0;
+   	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
+   	error_count = copy_to_user(buffer, message, size_of_message);
+ 
+   	if (error_count==0){            // if true then have success
+      		printk(KERN_INFO "read stub: Sent %d characters to the user\n", size_of_message);
+      		return (size_of_message=0);  // clear the position to the start and return 0
+   	}
+   	else {
+      		printk(KERN_INFO "read stub: Failed to send %d characters to the user\n", error_count);
+      		return -EFAULT;              // Failed -- return a bad address message (i.e. -14)
+   	}
 }
 
 /*
@@ -132,6 +147,8 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
  */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	printk(KERN_INFO "write stub");
-	return len;
+	sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
+   	size_of_message = strlen(message);                 // store the length of the stored message
+   	printk(KERN_INFO "write stub: Received %zu characters from the user\n", len);
+   	return len;
 }
