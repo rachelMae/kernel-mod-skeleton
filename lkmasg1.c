@@ -134,7 +134,6 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 {
 	int error_count = 0;
 	
-	offset -= len;
    	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
    	error_count = copy_to_user(buffer, message, size_of_message);
  
@@ -163,7 +162,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	}
 	else {
 	//error not enough space
-	printk(KERN_INFO " FAILED to write stub: Received %zu characters from the user, but there is not enough space avaliable\n", len);
+	printk(KERN_INFO " FAILED to write stub: Received %zu characters from the user, but there is only %zu space avaliable\n", len, malloc_usable_size(buffer) - len);
 	}
 	
    	
