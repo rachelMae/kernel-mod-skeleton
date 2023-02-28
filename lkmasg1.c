@@ -2,7 +2,7 @@
  * File:	lkmasg1.c
  * Adapted for Linux 5.15 by: John Aedo
  * Class:	COP4600-SP23
- * Edited by: Rachel Dauns and her group Justin and Hunter
+ * Edited by: Rachel and Justin and Hunter
  */
 
 #include <linux/init.h>           // Macros used to mark up functions e.g. __init __exit
@@ -133,6 +133,9 @@ static int close(struct inode *inodep, struct file *filep)
 static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
 	int error_count = 0;
+	char * temp;
+	strcpy(buffer, temp);
+	
 	
    	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
    	error_count = copy_to_user(buffer, message, size_of_message);
@@ -160,11 +163,11 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	offset += size_of_message;
 	printk(KERN_INFO "write stub: Received %zu characters from the user\n", len);
 	}
+	
 	else {
 	//error not enough space
 	printk(KERN_INFO " FAILED to write stub: Received %zu characters from the user, but there is only %zu space avaliable\n", len, malloc_usable_size(buffer) - len);
 	}
-	
    	
    	return len;
 }
