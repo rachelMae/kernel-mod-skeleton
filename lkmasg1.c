@@ -5,6 +5,7 @@
  * Edited by: Rachel Dauns and her group Justin and Hunter
  */
 
+#include <linux/init.h>           // Macros used to mark up functions e.g. __init __exit
 #include <linux/module.h>	  // Core header for modules.
 #include <linux/device.h>	  // Supports driver model.
 #include <linux/kernel.h>	  // Kernel header for convenient functions.
@@ -152,15 +153,19 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
  */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	if(len <= (buffer-offset)){
+	size_of_message = strlen(message); // store the length of the stored message
+	if(size_of_message) <= (malloc_usable_size(buffer) - len)){
 	//write info to device
 	sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
-	buffer.strcat(filep); //?
-	offset += len;
+	buffer.strcat(message); //?
+	offset += size_of_message;
+	printk(KERN_INFO "write stub: Received %zu characters from the user\n", len);
+	}
+	else {
+	//error not enough space
+	printk(KERN_INFO " FAILED to write stub: Received %zu characters from the user, but there is not enough space avaliable\n", len);
 	}
 	
-	sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
-   	size_of_message = strlen(message);                 // store the length of the stored message
-   	printk(KERN_INFO "write stub: Received %zu characters from the user\n", len);
+   	
    	return len;
 }
