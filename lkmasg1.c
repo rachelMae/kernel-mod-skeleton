@@ -25,6 +25,9 @@ static int major_number;
 static char   message[256] = {0};          
 static short  size_of_message;             
 static int    numberOpens = 0;
+char * buffer ;
+buffer = malloc(sizeof(char)*1024);   //fixed size of at least 1KB
+int offset = 0;
 
 static struct class *lkmasg1Class = NULL;	///< The device-driver class struct pointer
 static struct device *lkmasg1Device = NULL; ///< The device-driver device struct pointer
@@ -129,6 +132,8 @@ static int close(struct inode *inodep, struct file *filep)
 static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
 	int error_count = 0;
+	
+	offset -= len;
    	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
    	error_count = copy_to_user(buffer, message, size_of_message);
  
@@ -147,6 +152,13 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
  */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
+	if(len <= (buffer-offset)){
+	//write info to device
+	sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
+	buffer.strcat(filep); //?
+	offset += len;
+	}
+	
 	sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
    	size_of_message = strlen(message);                 // store the length of the stored message
    	printk(KERN_INFO "write stub: Received %zu characters from the user\n", len);
