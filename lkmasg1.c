@@ -136,8 +136,6 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 	strncpy(buffer, message, num_chars_to_copy);
 	buffer[num_chars_to_copy] = 0;
 
-	printk(KERN_INFO "here");
-
 	// Copy the message into temp, starting
 	// from where the last copy ended
 	strcpy(temp, message + num_chars_to_copy);
