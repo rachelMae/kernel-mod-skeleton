@@ -14,6 +14,8 @@
 #define DEVICE_NAME "lkmasg1" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
 
+#define MAX_MESSAGE_SIZE 1024
+
 MODULE_LICENSE("GPL");						 ///< The license type -- this affects available functionality
 MODULE_AUTHOR("John Aedo");					 ///< The author -- visible when you use modinfo
 MODULE_DESCRIPTION("lkmasg1 Kernel Module"); ///< The description -- see modinfo
@@ -23,12 +25,8 @@ MODULE_VERSION("0.1");						 ///< A version number to inform users
  * Important variables that store data and keep track of relevant information.
  */
 static int major_number;
-static char   message[256] = {0};          
-static short  size_of_message;             
-static int    numberOpens = 0;
-char * buffer ;
-buffer = malloc(sizeof(char)*1024);   //fixed size of at least 1KB
-int offset = 0;
+static char message[MAX_MESSAGE_SIZE + 1] = {0};
+static short size_of_message = 0;
 
 static struct class *lkmasg1Class = NULL;	///< The device-driver class struct pointer
 static struct device *lkmasg1Device = NULL; ///< The device-driver device struct pointer
@@ -113,7 +111,6 @@ void cleanup_module(void)
  */
 static int open(struct inode *inodep, struct file *filep)
 {
-	numberOpens++;
 	printk(KERN_INFO "lkmasg1: device opened.\n");
 	return 0;
 }
@@ -132,22 +129,28 @@ static int close(struct inode *inodep, struct file *filep)
  */
 static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
-	int error_count = 0;
-	char * temp;
-	strcpy(buffer, temp);
+	int num_chars_to_copy = min(len, size_of_message);
+	char temp[MAX_MESSAGE_SIZE];
+
+	// Copy what we can from the stored message to the buffer
+	strncpy(buffer, message, num_chars_to_copy);
+	buffer[num_chars_to_copy] = 0;
+
+	printk(KERN_INFO "here");
+
+	// Copy the message into temp, starting
+	// from where the last copy ended
+	strcpy(temp, message + num_chars_to_copy);
+
+	// Copy temp back into message, and
+	// add the null-sentinel right after
+	strcpy(message, temp);
+	message[size_of_message - num_chars_to_copy] = 0;
+
+	size_of_message = strlen(message);
 	
-	
-   	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
-   	error_count = copy_to_user(buffer, message, size_of_message);
- 
-   	if (error_count==0){            // if true then have success
-      		printk(KERN_INFO "read stub: Sent %d characters to the user\n", size_of_message);
-      		return (size_of_message=0);  // clear the position to the start and return 0
-   	}
-   	else {
-      		printk(KERN_INFO "read stub: Failed to send %d characters to the user\n", error_count);
-      		return -EFAULT;              // Failed -- return a bad address message (i.e. -14)
-   	}
+  	printk(KERN_INFO "read stub");
+	return num_chars_to_copy;
 }
 
 /*
@@ -155,19 +158,19 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
  */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	size_of_message = strlen(message); // store the length of the stored message
-	if(size_of_message) <= (malloc_usable_size(buffer) - len)){
-	//write info to device
-	sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
-	buffer.strcat(message); //?
-	offset += size_of_message;
-	printk(KERN_INFO "write stub: Received %zu characters from the user\n", len);
-	}
+	int available_space_in_message = MAX_MESSAGE_SIZE - size_of_message;
+	int num_chars_to_write = min(available_space_in_message, len);
 	
-	else {
-	//error not enough space
-	printk(KERN_INFO " FAILED to write stub: Received %zu characters from the user, but there is only %zu space avaliable\n", len, malloc_usable_size(buffer) - len);
-	}
-   	
-   	return len;
+	// Copy from the buffer only what is still available, and
+	// add the null-sentinel at the end.
+	strncpy(message + size_of_message, buffer, num_chars_to_write);
+	message[size_of_message + num_chars_to_write] = 0;
+	
+	// Update size_of_message
+	size_of_message = strlen(message);
+
+	printk(KERN_INFO "%d\n", size_of_message);
+	
+	printk(KERN_INFO "write stub");
+	return num_chars_to_write;
 }

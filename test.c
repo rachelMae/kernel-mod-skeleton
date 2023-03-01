@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define BUFFER_LENGTH 256           ///< The buffer length (crude but fine)
+#define BUFFER_LENGTH 1027           ///< The buffer length (crude but fine)
 static char receive[BUFFER_LENGTH]; ///< The receive buffer from the LKM
 
 int main(int argc, char *argv[])
@@ -48,10 +48,50 @@ int main(int argc, char *argv[])
         return errno;
     }
 
+    printf("Type in a short string to send to the kernel module:\n");
+    scanf("%[^\n]%*c", stringToSend); // Read in a string (with spaces)
+    ret = write(fd, stringToSend, strlen(stringToSend)); // Send the string to the LKM
+    if (ret < 0)
+    {
+        perror("Failed to write the message to the device.");
+        return errno;
+    }
+
+    // Read 3 characters
+    ret = read(fd, stringToSend, 3);
+    printf("The result from reading 3 characters: %s\n", stringToSend);
+
+    
+    printf("Type in a second short string to send to the kernel module:\n");
+    scanf("%[^\n]%*c", stringToSend); // Read in a string (with spaces)
+    printf("Writing message to the device [%s].\n", stringToSend);
+    ret = write(fd, stringToSend, strlen(stringToSend)); // Send the string to the LKM
+    if (ret < 0)
+    {
+        perror("Failed to write the message to the device.");
+        return errno;
+    }
     printf("Press ENTER to read back from the device...\n");
     getchar();
 
     printf("Reading from the device...\n");
+    
+    ret = read(fd, stringToSend, 100);
+    printf("The result from reading 100 characters: %s\n", stringToSend);
+
+
+    ret = read(fd, stringToSend, 0);
+    printf("The result from reading 0 characters: %s\n", stringToSend);
+
+    printf("Type in a third short string to send to the kernel module that is like  1024 char:\n");
+    scanf("%[^\n]%*c", stringToSend); // Read in a string (with spaces)
+    ret = write(fd, stringToSend, strlen(stringToSend)); // Send the string to the LKM
+    printf("Writing message to the device [%s].\n", stringToSend);
+
+    ret = read(fd, stringToSend, 1024);
+    printf("The result from reading 1024 characters: %s\n", stringToSend);
+
+
     ret = read(fd, receive, BUFFER_LENGTH); // Read the response from the LKM
     if (ret < 0)
     {
